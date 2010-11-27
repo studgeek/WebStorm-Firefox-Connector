@@ -1,0 +1,7 @@
+Unofficial work improving the Firefox Connector (debugging extension) for the most excellent IDE WebStorm from IntelliJ.
+
+The base extension is Copyright by IntelliJ and you should contact them before using it any way. Note, I'm not giving away any IntelliJ secrets here since the Firefox Connector code is fully visible to any user once they have installed WebStorm. All of their original releases are in the branch intellij. 
+
+My changes are Copyright David Rees 2011, and released under the Mozilla Publci License. My changes are all commits that are applied to the master branch.
+
+Pull requests are encouraged :).
