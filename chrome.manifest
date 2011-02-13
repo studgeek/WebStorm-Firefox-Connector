@@ -1,9 +1,0 @@
-content jetbrains-connector chrome/chromeFiles/content/
-overlay chrome://browser/content/browser.xul chrome://jetbrains-connector/content/browserOverlay.xul
-
-component {B5304038-0F08-11DE-937D-EA5E55D89593} components/module.js
-contract @jetbrains.com/firefox-connector;1 {B5304038-0F08-11DE-937D-EA5E55D89593}
-
-component {3DF5F5F6-0F00-11DE-8C34-29A456D89593} components/module.js
-contract @mozilla.org/commandlinehandler/general-startup;1?type=jbdebug {3DF5F5F6-0F00-11DE-8C34-29A456D89593}
-category command-line-handler m-jbdebug @mozilla.org/commandlinehandler/general-startup;1?type=jbdebug
