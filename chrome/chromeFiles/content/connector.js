@@ -38,6 +38,7 @@ JBExtension.JBConnector = {
     this.sendDisconnectingResponse(id);
     this.socket.close();
     this.connected = false;
+    JBExtension.Debugger.stop();
   },
 
   processMessage: function(text) {

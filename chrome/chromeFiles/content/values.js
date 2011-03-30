@@ -49,6 +49,12 @@ ValuesRegistry.prototype.sendValue = function(connector, id, name, value) {
   else if (jsType == JBExtension.Services.jsdIValue.TYPE_DOUBLE) {
     stringValue = "" + value.doubleValue;
   }
+  else if (jsType == JBExtension.Services.jsdIValue.TYPE_NULL) {
+    stringValue = "null";
+  }
+  else if (jsType == JBExtension.Services.jsdIValue.TYPE_VOID) {
+    stringValue = "void";
+  }
   else {
     stringValue = value.stringValue;
   }
