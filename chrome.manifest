@@ -1,4 +1,5 @@
 content jetbrains-connector chrome/chromeFiles/content/
+skin jetbrains-connector classic/1.0 skin/
 overlay chrome://browser/content/browser.xul chrome://jetbrains-connector/content/browserOverlay.xul
 
 component {B5304038-0F08-11DE-937D-EA5E55D89593} components/module.js

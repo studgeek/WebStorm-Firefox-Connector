@@ -25,6 +25,7 @@ function loadScripts() {
   loader.loadSubScript("chrome://jetbrains-connector/content/sockets.js");
   loader.loadSubScript("chrome://jetbrains-connector/content/scripts.js");
   loader.loadSubScript("chrome://jetbrains-connector/content/breakpoints.js");
+  loader.loadSubScript("chrome://jetbrains-connector/content/exceptionBreakpoints.js");
   loader.loadSubScript("chrome://jetbrains-connector/content/frames.js");
   loader.loadSubScript("chrome://jetbrains-connector/content/values.js");
   loader.loadSubScript("chrome://jetbrains-connector/content/filters.js");

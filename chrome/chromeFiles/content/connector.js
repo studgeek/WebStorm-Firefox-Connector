@@ -59,8 +59,8 @@ JBExtension.JBConnector = {
 
   sendResponse: function() {
     var s = arguments[0] + " " + arguments[1];
-    for (var i = 2; i < arguments.length; i+=2) {
-      var value = arguments[i+1];
+    for (var i = 2; i < arguments.length; i += 2) {
+      var value = arguments[i + 1];
       if (value != null) {
         var valueString = typeof(value) != "undefined" ? JBExtension.Utils.escapeSpaces("" + value) : "undefined";
         s += " " + arguments[i] + "=" + valueString;
@@ -96,8 +96,8 @@ JBExtension.JBConnector = {
   sendScriptCreatedResponse: function(info) {
     this.sendResponse(-1, "scriptCreated", "url", info.url, "tag", info.tag, "fun", this.getFunName(info.functionName),
                       "baseLine", info.getBaseLineNumber(), "lineExtent", info.getLineExtent()
-                      //source text of script is not used by js debugger yet
-                      //, "text", this.getFunName(info.getSourceText())
+        //source text of script is not used by js debugger yet
+        //, "text", this.getFunName(info.getSourceText())
     );
   },
 
@@ -143,13 +143,13 @@ JBExtension.JBConnector = {
 
   sendStackFrameInfoResponse: function(id, frameInfo) {
     var funName = frameInfo.getFunctionName();
-    this.sendResponse(id, "stackFrame", "index", frameInfo.index, "url", frameInfo.url, "line", frameInfo.getLine()-1,
-                          "function", this.getFunName(funName), "scriptTag", frameInfo.getScriptTag());
+    this.sendResponse(id, "stackFrame", "index", frameInfo.index, "url", frameInfo.url, "line", frameInfo.getLine() - 1,
+                      "function", this.getFunName(funName), "scriptTag", frameInfo.getScriptTag());
   },
 
   sendValueInfoResponse: function(id, name, valueId, valueType, className, stringValue) {
     this.sendResponse(id, "value", "name", name, "valueId", valueId, "valueType", valueType,
-                                   "className", className, "stringValue", stringValue);
+                      "className", className, "stringValue", stringValue);
   },
 
   sendBreakpointResponse: function(id, breakpointId, status) {
@@ -158,12 +158,17 @@ JBExtension.JBConnector = {
 
   sendBreakpointReachedResponse: function(breakpointId, logMessage, frame) {
     this.sendResponse(-1, "breakpointReached", "id", breakpointId, "log", logMessage,
-                          "scriptTag", frame.script.tag, "function", this.getFunName(frame.functionName));
+                      "scriptTag", frame.script.tag, "function", this.getFunName(frame.functionName));
+  },
+
+  sendExcBreakpointReachedResponse: function(breakpointId, url, line, logMessage, frame) {
+    this.sendResponse(-1, "excBreakpointReached", "id", breakpointId, "url", url, "line", line - 1, "log", logMessage,
+                      "scriptTag", frame.script.tag, "function", this.getFunName(frame.functionName));
   },
 
   sendSuspendedResponse: function(url, line, frame) {
-    this.sendResponse(-1, "suspended", "url", url, "line", line-1, "scriptTag", frame.script.tag,
-                          "function", this.getFunName(frame.functionName));
+    this.sendResponse(-1, "suspended", "url", url, "line", line - 1, "scriptTag", frame.script.tag,
+                      "function", this.getFunName(frame.functionName));
   },
 
   getFunName: function(name) {
@@ -200,15 +205,24 @@ JBExtension.JBConnector = {
   },
 
   doSetBreakpoint: function(id, parameters) {
-    var registered = JBExtension.BreakpointManager.registerBreakpoint(parameters.id, parameters.url, parseInt(parameters.line)+1,
-        parameters.condition, parameters.log);
+    var registered = JBExtension.BreakpointManager.registerBreakpoint(parameters.id, parameters.url, parseInt(parameters.line) + 1,
+                                                                      parameters.condition, parameters.log);
     if (registered) {
       this.sendBreakpointResponse(id, parameters.id, "OK");
     }
   },
 
+  doSetExceptionBreakpoint: function(id, parameters) {
+    JBExtension.ExcBreakpointManager.registerBreakpoint(parameters.id, parameters.exception, parameters.condition, parameters.log)
+  },
+
   doClearBreakpoint: function(id, parameters) {
-    JBExtension.BreakpointManager.unregisterBreakpoints(parameters.id);
+    if (parameters.exc == "true") {
+      JBExtension.ExcBreakpointManager.unregisterBreakpoint(parameters.id);
+    }
+    else {
+      JBExtension.BreakpointManager.unregisterBreakpoint(parameters.id);
+    }
   },
 
   doSetLoggingSettings: function(id, parameters) {
@@ -259,7 +273,7 @@ JBExtension.JBConnector = {
   },
 
   doRunTo: function(id, parameters) {
-    JBExtension.Debugger.runTo(parameters.url, parseInt(parameters.line)+1);
+    JBExtension.Debugger.runTo(parameters.url, parseInt(parameters.line) + 1);
   },
 
   doResume: function(id, parameters) {

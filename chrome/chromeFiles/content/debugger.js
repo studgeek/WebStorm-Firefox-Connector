@@ -1,5 +1,7 @@
 const RETURN_CONTINUE = JBExtension.Services.jsdIExecutionHook.RETURN_CONTINUE;
+const RETURN_CONTINUE_THROW = JBExtension.Services.jsdIExecutionHook.RETURN_CONTINUE_THROW;
 const TYPE_BREAKPOINT = JBExtension.Services.jsdIExecutionHook.TYPE_BREAKPOINT;
+const TYPE_THROW = JBExtension.Services.jsdIExecutionHook.TYPE_THROW;
 const TYPE_INTERRUPTED = JBExtension.Services.jsdIExecutionHook.TYPE_INTERRUPTED;
 
 const TYPE_TOPLEVEL_END = JBExtension.Services.jsdICallHook.TYPE_TOPLEVEL_END;
@@ -58,6 +60,7 @@ JBExtension.Debugger = {
       this.jsd.unPause();
     }
     this.jsd.breakpointHook = {onExecute: JBExtension.Utils.wrapCallback(this.onBreakpoint, this)};
+    this.jsd.throwHook = {onExecute: JBExtension.Utils.wrapCallback(this.onBreakpoint, this)};
     this.evaluating = false;
     JBExtension.FiltersManager.appendFilters(this.jsd);
     JBExtension.BreakpointManager.connector = this.connector;
@@ -71,31 +74,53 @@ JBExtension.Debugger = {
   },
 
   onBreakpoint: function(frame, type, val) {
-    if (frame.isNative) {
+    var lineBreakpoint = type == TYPE_BREAKPOINT;
+    var defaultContinue;
+    if (lineBreakpoint) {
+      defaultContinue = RETURN_CONTINUE;
+    }
+    else if (type == TYPE_THROW) {
+      defaultContinue = RETURN_CONTINUE_THROW;
+    }
+    else {
       return RETURN_CONTINUE;
     }
-    if (type != TYPE_BREAKPOINT) {
-      return RETURN_CONTINUE;
+
+    if (frame.isNative || JBExtension.ScriptManager.ignoreScript(frame.script)) {
+      return defaultContinue;
     }
-    if (JBExtension.FiltersManager.doNotStep(frame.script.fileName)) {
-      return RETURN_CONTINUE;
+    if (lineBreakpoint && JBExtension.FiltersManager.doNotStep(frame.script.fileName)) {
+      return defaultContinue;
     }
 
     LOG("Breakpoint reached in " + frame.script.fileName + " at line " + frame.line);
     var scriptInfo = JBExtension.ScriptManager.getScriptInfo(frame.script);
     if (!scriptInfo) {
       LOG("cannot find script");
-      return RETURN_CONTINUE;
+      return defaultContinue;
     }
 
-    var breakpoint = JBExtension.BreakpointManager.findBreakpoint(scriptInfo, frame.pc);
-    if (breakpoint && breakpoint.condition) {
+    var breakpoint;
+    if (lineBreakpoint) {
+      breakpoint = JBExtension.BreakpointManager.findBreakpoint(scriptInfo, frame.pc);
+      if (!breakpoint) {
+        LOG("breakpoint not found");
+      }
+    }
+    else {
+      breakpoint = JBExtension.ExcBreakpointManager.findBreakpoint(val)
+    }
+    if (!breakpoint) {
+      return defaultContinue;
+    }
+
+    if (breakpoint.condition) {
       try {
         LOG("Evaluating condition: " + breakpoint.condition);
         var result = this.frameEval(frame, breakpoint.condition, frame.script.fileName, frame.line).booleanValue;
         LOG("result = " + result);
         if (result == false) {
-          return RETURN_CONTINUE;
+          return defaultContinue;
         }
       }
       catch(e) {
@@ -103,7 +128,7 @@ JBExtension.Debugger = {
       }
     }
 
-    if (breakpoint && breakpoint.id >= 0) {
+    if (breakpoint.id >= 0) {
       var logMessage = null;
       if (breakpoint.logExpression) {
         try {
@@ -116,13 +141,18 @@ JBExtension.Debugger = {
         }
       }
 
-      this.connector.sendBreakpointReachedResponse(breakpoint.id, logMessage, frame);
+      if (lineBreakpoint) {
+        this.connector.sendBreakpointReachedResponse(breakpoint.id, logMessage, frame);
+      }
+      else {
+        this.connector.sendExcBreakpointReachedResponse(breakpoint.id, scriptInfo.url, frame.line, logMessage, frame);
+      }
     }
     else {
       this.connector.sendSuspendedResponse(scriptInfo.url, frame.line, frame);
     }
     this.suspend(frame);
-    return RETURN_CONTINUE;
+    return defaultContinue;
   },
 
   suspend: function(frame) {
