@@ -38,7 +38,7 @@ JBExtension.BreakpointManager = {
     this.temporaryBreakpoints = [];
   },
 
-  unregisterBreakpoints: function(breakpointId) {
+  unregisterBreakpoint: function(breakpointId) {
     var breakpoint = this.id2breakpoint[breakpointId];
     if (!breakpoint) return;
     this.doUnregisterBreakpoint(breakpoint);
