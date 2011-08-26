@@ -180,7 +180,13 @@ ScriptInfo.prototype.getLineExtent = function() {
 }
 
 ScriptInfo.prototype.isLineExecutable = function(line) {
-  return this.script.isLineExecutable(line, PCMAP_SOURCETEXT);
+  try {
+    return this.script.isLineExecutable(line, PCMAP_SOURCETEXT);
+  }
+  catch (e) {
+    //isLineExecutable sometimes throws NS_ERROR_NOT_AVAILABLE
+    return false;
+  }
 }
 
 ScriptInfo.prototype.containsLine = function(line) {
