@@ -105,11 +105,19 @@ JBExtension.Services = {
   },
 
   createDocShell: function() {
-    var docShell = Components.classes["@mozilla.org/docshell;1"];
-    if (!docShell) {
-      docShell = Components.classes["@mozilla.org/webshell;1"];
+    var docShellClass = Components.classes["@mozilla.org/docshell;1"];
+    if (!docShellClass) {
+      docShellClass = Components.classes["@mozilla.org/webshell;1"];
     }
-    return docShell.createInstance();
+    var docShell = docShellClass.createInstance();
+    try {
+      //to fix crashes in Firefox 5, see https://bugzilla.mozilla.org/show_bug.cgi?id=552193
+      docShell.QueryInterface(Components.interfaces.nsIBaseWindow).create();
+    }
+    catch (e) {
+      LOG(e);
+    }
+    return docShell;
   },
 
   createServerSocket: function(port) {

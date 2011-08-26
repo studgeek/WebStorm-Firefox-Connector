@@ -5,7 +5,7 @@ function SaveSourceWorker(responseId) {
   var worker = this;
   this.progressListener.onStateChange = function(progress, request, state, status) {
     LOG("view source state change: state=" + state + ", status = " + status);
-    if ((state & JBExtension.Services.nsIWebProgressListener.STATE_STOP) && status == 0) {
+    if ((state & JBExtension.Services.nsIWebProgressListener.STATE_STOP) != 0 && status == 0) {
       worker.onLoadingFinished();
       LOG("contentSaved");
     }
@@ -28,6 +28,15 @@ SaveSourceWorker.prototype.onLoadingFinished = function() {
     converterOutput.writeString(webNavigation.document.body.textContent);
     converterOutput.close();
     fileOutput.close();
+
+    try {
+      this.docShell.QueryInterface(Components.interfaces.nsIBaseWindow)
+                   .QueryInterface(Components.interfaces.nsIDocShell).destroy();
+    }
+    catch (e) {
+      LOG(e);
+    }
+    this.docShell = null;
   }
 
   JBExtension.JBConnector.sendContentSavedResponse(this.responseId, this.contentType);
@@ -45,7 +54,7 @@ SaveSourceWorker.prototype.saveSource = function(targetPath) {
     var pageDescriptor = webNavigation.QueryInterface(JBExtension.Services.nsIWebPageDescriptor).currentDescriptor;
   }
   catch(e) {
-    LOG("saveSource: cannod get descriptor. " + e);
+    LOG("saveSource: cannot get descriptor. " + e);
   }
 
   var sourceURI = browser.currentURI;
