@@ -56,23 +56,47 @@ JBExtension.ScriptManager = {
 
   ignoreScript: function(script) {
     var url = script.fileName;
+    var shouldIgnore = false;
+    var IGNORE_SYSTEM_FILES = false; // This is intended to become a option either on the add-on or in IDEA
 
     if (url in this.ignoredUrls) {
       return true;
     }
 
-    if (JBExtension.Utils.startsWith(url, "chrome://") || JBExtension.Utils.startsWith(url, "XStringBundle")
-        || JBExtension.Utils.startsWith(url, "about:")
-        || url.indexOf("/extensions/firefox-connector@jetbrains.com/") != -1
+    // These are scripts that IDEA can't handle, so we ignore them even if we are not ignoring SYSTEM files
+    if ((JBExtension.Utils.startsWith(url, "chrome://")
+          && !JBExtension.Utils.startsWith(JBExtension.Utils.convertChromeUrlToFileUrl(url), "file:"))  // Can't handle non-files (jars)
+      || JBExtension.Utils.startsWith(url, "XStringBundle")
+      || JBExtension.Utils.startsWith(url, "about:")
+      || JBExtension.Utils.startsWith(url,"chrome://jetbrains-connector")
+      || /^(file:.*((F|f)irefox).*\/(components|modules)\/).*\.(js|jsm)$/.test(url)                     // Causes Firefox to crash somehow
+      ) {
+      shouldIgnore = true;
+    }
+
+    // If we are ignoring system files we hide everything that doesn't look like normal user code
+    if(IGNORE_SYSTEM_FILES) {
+      if (JBExtension.Utils.startsWith(url, "chrome://")
         || /\/extensions\/\{.{8}(-.{4}){3}-.{12}\}\//.test(url)
         || /\/xulrunner-\d\.\d\.\d\.\d\/(modules|components|chrome)\//.test(url)
-        || /^(file:.*((F|f)irefox).*\/(components|modules)\/).*\.(js|jsm)$/.test(url)
         || /^(file:.*\/extensions\/firebug)/.test(url)
-        || /^(XP).*(\.cpp)$/.test(url)) {
-       this.ignoredUrls[url] = true;
-       return true;
-     }
-     return false;
+        || /^(XP).*(\.cpp)$/.test(url)
+        ) {
+        shouldIgnore = true;
+      }
+    }
+
+
+    if (shouldIgnore) {
+        this.ignoredUrls[url] = true;
+        ERROR("Ignored new url: " + url);
+        return true;
+    } else {
+        if (this.url2scripts.getValues(JBExtension.Utils.fixScriptUrl(url)).length === 0) {
+            ERROR("Didn't ignore url: " + url);
+        }
+        return false;
+    }
   },
 
   findScripts: function (url, line) {
