@@ -78,13 +78,46 @@ JBExtension.Utils = {
   },
 
   fixScriptUrl: function(scriptUrl) {
-    if (scriptUrl.length > 7 && scriptUrl.substring(0, 6) == "file:/" && scriptUrl.charAt(6) != "/") {
-      return "file:///" + scriptUrl.substring(6);
-    }
-    return scriptUrl;
+      var fileUrl;
+      // If this is a chrome URL, convert it to the local file path which is how breakpoint requests will be sent from
+      // the IDE.
+      // Note that this can result in a jar:file:// url, that doesn't hurt anything but obviously it will never
+      // match any files in the IDE either. We may want to ignore scripts that are in jars just to reduce some clutter.
+      fileUrl = JBExtension.Utils.startsWith(scriptUrl, "chrome://") ?
+              this.convertChromeUrlToFileUrl(scriptUrl)
+              : scriptUrl;
+
+      if (!fileUrl) { // We shouldn't get here because this URL should have been ignored
+          ERROR("No file URL for chrome URL " + scriptUrl);
+      }
+
+      if (fileUrl.length > 7 && fileUrl.substring(0, 6) == "file:/" && fileUrl.charAt(6) != "/") {
+          return "file:///" + fileUrl.substring(6);
+      }
+
+      return fileUrl;
   },
 
-  convertToScriptUrl: function(normalUrl) {
+  crs: Components.classes['@mozilla.org/chrome/chrome-registry;1'].getService(Components.interfaces.nsIChromeRegistry),
+
+  ios: Components.classes['@mozilla.org/network/io-service;1'].getService(Components.interfaces.nsIIOService),
+
+    // Converts a chrome URL to the local file URL (which may be a jar:file: URL). If a chrome URL can't be converted
+    // then null is returned.
+    // The null result is for a small set of URLs that throw a "restricted URI" exception, the only case we have
+    // found for that is chrome://extensiondev/content/extensiondevOverlay.js, but there may be others.
+    convertChromeUrlToFileUrl: function(scriptUrl) {
+        try {
+            var nsIURI = this.ios.newURI(decodeURI(scriptUrl), 'UTF-8', null);
+            return this.crs.convertChromeURL(nsIURI).spec;
+        } catch(e) {
+            //LOG("Error converting chrome URL " + scriptUrl + " - " + e);
+            return "";
+        }
+
+    },
+
+    convertToScriptUrl: function(normalUrl) {
     if (this.startsWith(normalUrl, "file:///")) {
       return "file:/" + normalUrl.substring(8);
     }
